@@ -6,6 +6,17 @@
     android:padding="20dp">
 
     <TextView
+        android:id="@+id/txtPrikaz"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="DISARMED"
+        android:textStyle="bold"
+        android:gravity="center"
+        android:textSize="38sp"
+        android:padding="10dp" />
+
+
+    <TextView
         android:id="@+id/txtStatus"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -18,6 +29,19 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="Received: ---"
+        android:textSize="18sp"
+        android:padding="10dp" />
+
+    <TextView
+        android:id="@+id/txtNaklonRealtime"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:textSize="18sp"
+        android:padding="10dp" />
+    <TextView
+        android:id="@+id/txtNaklonZaciatocna"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
         android:textSize="18sp"
         android:padding="10dp" />
 

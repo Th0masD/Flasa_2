@@ -8,28 +8,38 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
+import android.view.View;
 
 import androidx.appcompat.app.AppCompatActivity;
+
 
 public class InputActivity extends AppCompatActivity {
 
     private BleManager bleManager;
 
     private EditText inputNumber;
-    private Button btnSend, btnBattery;
+    private Button btnSend, btnBattery, btnArmed, btnDisarmed,btnTest;
     private TextView txtBattery;
     private TextView txtNotify;
 
     private BluetoothDevice device;
+
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_input);
 
+
+
         inputNumber = findViewById(R.id.inputNumber);
         btnSend = findViewById(R.id.btnSend);
         btnBattery = findViewById(R.id.btnBattery);
+        btnArmed = findViewById(R.id.btnArmed);
+        btnDisarmed = findViewById(R.id.btnDisarmed);
+        btnTest = findViewById(R.id.btnTest);
+
         txtBattery = findViewById(R.id.txtBattery);
         txtNotify = findViewById(R.id.txtNotify);
 
@@ -62,13 +72,17 @@ public class InputActivity extends AppCompatActivity {
 
             }
 
+
             @Override
             public void onDataReceived(String uuid, byte[] data) {
+               /*
                 runOnUiThread(() -> {
                     String value = new String(data);
                     inputNumber.setText(value);
                 });
+            */
             }
+
 
 
             @Override
@@ -92,6 +106,7 @@ public class InputActivity extends AppCompatActivity {
         bleManager.disconnect();   // refresh cache + close starý GATT
         bleManager.connect(device);
 
+/*
         btnSend.setOnClickListener(v -> {
 
             String number = inputNumber.getText().toString().trim();
@@ -108,5 +123,37 @@ public class InputActivity extends AppCompatActivity {
         btnBattery.setOnClickListener(v -> {
             bleManager.readBattery();
         });
+    */
+
     }
+
+
+
+    public void onClick(View view) {
+
+        int id = view.getId();
+
+        if (id == R.id.btnSend) {
+            String number = inputNumber.getText().toString().trim();
+            bleManager.writeNumber(number);
+
+        } else if (id == R.id.btnBattery) {
+            bleManager.readBattery();
+
+        } else if (id == R.id.btnArmed) {
+            String number = inputNumber.getText().toString().trim();
+            bleManager.writeNumber("ON:" + number);
+
+        } else if (id == R.id.btnDisarmed) {
+            String number = inputNumber.getText().toString().trim();
+            bleManager.writeNumber("OF:" + number);
+
+        } else if (id == R.id.btnTest) {
+            String number = inputNumber.getText().toString().trim();
+            bleManager.writeNumber("TS:" + number);
+        }
+    }
+
+
+
 }

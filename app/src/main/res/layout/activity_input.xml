@@ -14,23 +14,45 @@
 
     <Button
         android:id="@+id/btnSend"
+        android:onClick="onClick"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="SEND" />
 
     <Button
         android:id="@+id/btnBattery"
+        android:onClick="onClick"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="READ BATTERY" />
+    <Button
+        android:id="@+id/btnArmed"
+        android:onClick="onClick"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="ARMED" />
+    <Button
+        android:id="@+id/btnDisarmed"
+        android:onClick="onClick"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="DISARMED" />
+    <Button
+        android:id="@+id/btnTest"
+        android:onClick="onClick"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="TEST" />
 
     <TextView
         android:id="@+id/txtBattery"
+        android:onClick="onClick"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="Battery: --%" />
     <TextView
         android:id="@+id/txtNotify"
+        android:onClick="onClick"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="Notify: --" />

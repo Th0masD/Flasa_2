@@ -311,9 +311,13 @@ public class BleServerManager {
                         int offset,
                         byte[] value) {
 
+                    // Aby 2X nezapisoval
+                    if (preparedWrite) return;
+                    if (offset != 0) return;
+
                     String data = new String(value);
 
-                    Log.d(TAG, "Received: " + data);
+                    Log.d(TAG, "WRITE ONLY ONCE: " + data);
 
                     if (callback != null) {
                         callback.onDataReceived(
@@ -321,6 +325,12 @@ public class BleServerManager {
                                 value
                         );
                     }
+
+
+
+                    Log.d(TAG, "Received: " + data);
+
+
 
                     if (responseNeeded && gattServer != null) {
                         gattServer.sendResponse(
