@@ -66,6 +66,7 @@ public class ServerActivity extends AppCompatActivity implements SensorEventList
 
     ToneGenerator toneG = new ToneGenerator(AudioManager.STREAM_ALARM, 100);
 
+    private CallStateManager callStateManager;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -143,14 +144,38 @@ public class ServerActivity extends AppCompatActivity implements SensorEventList
             }
         });
 
+
         btnNotify.setOnClickListener(v -> {
             Log.d(TAG, "Notify Button");
             bleServerManager.sendNotification("Test");
 
         });
 
-
         bleServerManager.start();
+
+
+        // Telefonovanaie manager
+            callStateManager = new CallStateManager();
+
+            callStateManager.start(this, new CallStateManager.CallListener() {
+                @Override
+                public void onRinging() {
+                    Log.d("CALL", "Volá...");
+                }
+
+                @Override
+                public void onAnswered() {
+                    Log.d("CALL", "Zdvihnuté");
+                }
+
+                @Override
+                public void onEnded(CallStateManager.CallResult result) {
+                    Log.d("CALL", "Výsledok: " + result);
+                }
+
+
+            });
+
     }
 
 
@@ -177,11 +202,6 @@ public class ServerActivity extends AppCompatActivity implements SensorEventList
                 ZapVyp = true;
                 TestNaklonu = false;
 
-                //     mMobilCislo1.setText("ZAP " + mobilcislo);
-                //       toneG.startTone(ToneGenerator.TONE_DTMF_0, 200);
-                //        mediaPlayer = MediaPlayer.create(PeripheralRoleActivity.this, R.raw.strazim);
-                //        mediaPlayer.start();
-
                 runOnUiThread(new Runnable() {
                     @Override
                     public void run() {
@@ -190,7 +210,6 @@ public class ServerActivity extends AppCompatActivity implements SensorEventList
                     }
                 });
 
-
                 pocitadlo_nakolnu=5;
                 startSensor();
 
@@ -198,11 +217,6 @@ public class ServerActivity extends AppCompatActivity implements SensorEventList
 
             case "OF":
                 ZapVyp = false;
-                //    mMobilCislo1.setText("VYP ");
-                //      toneG.startTone(ToneGenerator.TONE_CDMA_ABBR_INTERCEPT, 500);
-                //      toneG.startTone(ToneGenerator.TONE_CDMA_ABBR_REORDER, 4000);
-                //     mediaPlayer = MediaPlayer.create(PeripheralRoleActivity.this, R.raw.nestrazim);
-                //    mediaPlayer.start();
 
                 runOnUiThread(new Runnable() {
                     @Override
@@ -213,15 +227,8 @@ public class ServerActivity extends AppCompatActivity implements SensorEventList
                 });
 
 
-
                 TestNaklonu = false;
                 stopSensor();
-
-                //    String msg2 = mobilcislo;
-                //  sensorManager.unregisterListener(PeripheralRoleActivity.this);
-
-                //    Log.v(MainActivity.TAG, msg2);
-                //    showMsgText(msg2);
 
                 break;
 
@@ -235,11 +242,6 @@ public class ServerActivity extends AppCompatActivity implements SensorEventList
                 TestNaklonu = true;
                 PrvyKrat = true;
 
-                //     mMobilCislo1.setText("TEST" + mobilcislo);
-                //     toneG.startTone(ToneGenerator.TONE_DTMF_9, 200);
-                //        mediaPlayer = MediaPlayer.create(PeripheralRoleActivity.this, R.raw.testujem);
-                //        mediaPlayer.start();
-
                 runOnUiThread(new Runnable() {
                     @Override
                     public void run() {
@@ -247,28 +249,12 @@ public class ServerActivity extends AppCompatActivity implements SensorEventList
                     }
                 });
 
-
                 startSensor();
-
-
-                //tomas
-                sensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
-                acclerometer = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
-                sensorManager.registerListener(ServerActivity.this, acclerometer, SensorManager.SENSOR_DELAY_NORMAL);
-
-
                 break;
-
 
         }
 
-
     }
-
-
-
-
-
 
 
     //tomas
@@ -283,7 +269,7 @@ public class ServerActivity extends AppCompatActivity implements SensorEventList
         zmenaY = sensorEvent.values[1];
         zmenaZ = sensorEvent.values[2];
 
-
+        // Pri zapnuti rezimu TESTUJEM sa ulozia hodnoty naklonu. Nasledne sa porovnavaju s realnymi. Pri zmene o 1 sa spusti Alarm.
         if (PrvyKrat == true)
         {
             zmenaXzaciatocna = sensorEvent.values[0];
@@ -293,25 +279,30 @@ public class ServerActivity extends AppCompatActivity implements SensorEventList
             PrvyKrat = false;
         }
 
-
+        // Ak je zapnuty rezim Testujem
         if (((abs(zmenaXzaciatocna-zmenaX)>1) || (abs(zmenaYzaciatocna-zmenaY)>1) || (abs(zmenaZzaciatocna-zmenaZ)>1)) && TestNaklonu)
         {
 
 
             if(pocitadlo_nakolnu==0) {
-               // notifyCharacteristicChanged();
-               // bleServerManager.sendNotification("Test");
-                toneG.startTone(ToneGenerator.TONE_CDMA_DIAL_TONE_LITE, 100);
+
+                bleServerManager.sendNotification("Test");
+              //  toneG.startTone(ToneGenerator.TONE_CDMA_DIAL_TONE_LITE, 100);
                 pocitadlo_nakolnu=3;
             }
             pocitadlo_nakolnu--;
-            //  sensorManager.unregisterListener(PeripheralRoleActivity.this);
+
         }
 
+        // Ak je zapnuty rezim Armed
         if (((abs(zmenaXzaciatocna-zmenaX)>1) || (abs(zmenaYzaciatocna-zmenaY)>1) || (abs(zmenaZzaciatocna-zmenaZ)>1)) && ZapVyp)
         {
             //      ToneGenerator toneG = new ToneGenerator(AudioManager.STREAM_ALARM, 100);
            // zavolajCislo();
+
+                CallManager.makeCall(this, mobilcislo);
+
+
             //  SendSMS();
             //  sensorManager.unregisterListener(PeripheralRoleActivity.this);
         }
@@ -338,13 +329,16 @@ public class ServerActivity extends AppCompatActivity implements SensorEventList
         super.onDestroy();
         bleServerManager.stop();
         sensorManager.unregisterListener(this);
+
+        if (callStateManager != null) {
+            callStateManager.stop(this);
+        }
+
     }
 
     @Override
     protected void onPause() {
         super.onPause();
-        bleServerManager.stop();
-        sensorManager.unregisterListener(this);
         }
 
     @Override

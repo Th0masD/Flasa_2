@@ -31,7 +31,7 @@ public class MainActivity extends AppCompatActivity {
 
         btnClient.setOnClickListener(v -> {
             Intent intent =
-                    new Intent(MainActivity.this, ClientActivity.class);
+                    new Intent(MainActivity.this, DiscoveryActivity.class);
             startActivity(intent);
         });
     }

@@ -62,6 +62,70 @@ public class PermissionUtil {
             return false;
         }
 
+        // Povolenie na telefonovanie (všetky verzie)
+        if (ContextCompat.checkSelfPermission(
+                activity,
+                Manifest.permission.CALL_PHONE)
+                != PackageManager.PERMISSION_GRANTED) {
+
+            permissions.add(Manifest.permission.CALL_PHONE);
+        }
+
+        if (!permissions.isEmpty()) {
+
+            ActivityCompat.requestPermissions(
+                    activity,
+                    permissions.toArray(new String[0]),
+                    REQUEST_CODE
+            );
+
+            return false;
+
+        }
+
+        if (ContextCompat.checkSelfPermission(
+                activity,
+                Manifest.permission.SEND_SMS)
+                != PackageManager.PERMISSION_GRANTED) {
+
+            permissions.add(Manifest.permission.SEND_SMS);
+        }
+
+        if (!permissions.isEmpty()) {
+
+            ActivityCompat.requestPermissions(
+                    activity,
+                    permissions.toArray(new String[0]),
+                    REQUEST_CODE
+            );
+
+            return false;
+
+        }
+
+        if (ContextCompat.checkSelfPermission(
+                activity,
+                Manifest.permission.ACCESS_COARSE_LOCATION)
+                != PackageManager.PERMISSION_GRANTED) {
+
+            permissions.add(Manifest.permission.ACCESS_COARSE_LOCATION);
+        }
+
+        if (!permissions.isEmpty()) {
+
+            ActivityCompat.requestPermissions(
+                    activity,
+                    permissions.toArray(new String[0]),
+                    REQUEST_CODE
+            );
+
+            return false;
+
+        }
+
+
+
+
         return true;
     }
 }

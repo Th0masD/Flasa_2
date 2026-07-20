@@ -3,6 +3,9 @@ package com.example.flasa2;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothManager;
+import android.graphics.Color;
+import android.media.AudioManager;
+import android.media.ToneGenerator;
 import android.os.Bundle;
 import android.widget.Button;
 import android.widget.EditText;
@@ -21,10 +24,11 @@ public class InputActivity extends AppCompatActivity {
     private Button btnSend, btnBattery, btnArmed, btnDisarmed,btnTest;
     private TextView txtBattery;
     private TextView txtNotify;
+    private TextView txtPrikaz;
 
     private BluetoothDevice device;
 
-
+    ToneGenerator toneG = new ToneGenerator(AudioManager.STREAM_ALARM, 100);
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -42,6 +46,7 @@ public class InputActivity extends AppCompatActivity {
 
         txtBattery = findViewById(R.id.txtBattery);
         txtNotify = findViewById(R.id.txtNotify);
+        txtPrikaz = findViewById(R.id.txtPrikaz);
 
         String address = getIntent().getStringExtra("device_address");
 
@@ -75,18 +80,14 @@ public class InputActivity extends AppCompatActivity {
 
             @Override
             public void onDataReceived(String uuid, byte[] data) {
-               /*
-                runOnUiThread(() -> {
-                    String value = new String(data);
-                    inputNumber.setText(value);
-                });
-            */
+
             }
 
 
 
             @Override
             public void onNotificationReceived(String message) {
+                toneG.startTone(ToneGenerator.TONE_CDMA_DIAL_TONE_LITE, 100);
                 txtNotify.setText(message);
             }
 
@@ -94,7 +95,7 @@ public class InputActivity extends AppCompatActivity {
             @Override
             public void onBatteryReceived(int batteryLevel) {
                 runOnUiThread(() ->
-                        txtBattery.setText("Battery: " + batteryLevel + "%"));
+                        txtBattery.setText(batteryLevel + "%"));
             }
 
             @Override
@@ -143,14 +144,20 @@ public class InputActivity extends AppCompatActivity {
         } else if (id == R.id.btnArmed) {
             String number = inputNumber.getText().toString().trim();
             bleManager.writeNumber("ON:" + number);
+            txtPrikaz.setText("ARMED");
+            txtPrikaz.setTextColor(Color.RED);
 
         } else if (id == R.id.btnDisarmed) {
             String number = inputNumber.getText().toString().trim();
             bleManager.writeNumber("OF:" + number);
+            txtPrikaz.setText("DISARMED");
+            txtPrikaz.setTextColor(Color.GREEN);
 
         } else if (id == R.id.btnTest) {
             String number = inputNumber.getText().toString().trim();
             bleManager.writeNumber("TS:" + number);
+            txtPrikaz.setText("TESTING");
+            txtPrikaz.setTextColor(Color.BLUE);
         }
     }
 

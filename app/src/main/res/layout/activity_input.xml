@@ -49,7 +49,22 @@
         android:onClick="onClick"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:layout_marginBottom="16dp"
+        android:textStyle="bold"
+        android:gravity="center"
+        android:textSize="38sp"
         android:text="Battery: --%" />
+
+    <TextView
+        android:id="@+id/txtPrikaz"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        android:padding="10dp"
+        android:text="DISARMED"
+        android:textSize="38sp"
+        android:textStyle="bold" />
     <TextView
         android:id="@+id/txtNotify"
         android:onClick="onClick"

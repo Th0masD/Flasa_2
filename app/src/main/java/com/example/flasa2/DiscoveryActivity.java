@@ -17,7 +17,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import java.util.ArrayList;
 import java.util.List;
 
-public class ClientActivity extends AppCompatActivity {
+public class DiscoveryActivity extends AppCompatActivity {
 
     private BluetoothAdapter bluetoothAdapter;
     private BluetoothLeScanner scanner;
@@ -31,7 +31,7 @@ public class ClientActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_client);
+        setContentView(R.layout.activity_discovery);
 
         listView = findViewById(R.id.listDevices);
 
@@ -56,7 +56,7 @@ public class ClientActivity extends AppCompatActivity {
             BluetoothDevice device = deviceList.get(position);
 
             Intent intent =
-                    new Intent(ClientActivity.this, InputActivity.class);
+                    new Intent(DiscoveryActivity.this, InputActivity.class);
 
             intent.putExtra("device_address", device.getAddress());
 
@@ -94,3 +94,4 @@ public class ClientActivity extends AppCompatActivity {
         }
     };
 }
+

@@ -4,10 +4,14 @@
 
     <!-- BLE -->
     <uses-feature android:name="android.hardware.bluetooth_le" android:required="true"/>
+    <uses-feature android:name="android.hardware.telephony"  android:required="false"/>
 
     <!-- Legacy (Android < 12) -->
     <uses-permission android:name="android.permission.BLUETOOTH"/>
     <uses-permission android:name="android.permission.BLUETOOTH_ADMIN"/>
+    <uses-permission android:name="android.permission.CALL_PHONE"/>
+    <uses-permission android:name="android.permission.SEND_SMS"/>
+    <uses-permission android:name="android.permission.READ_PHONE_STATE"/>
 
     <!-- Android 12+ -->
     <uses-permission android:name="android.permission.BLUETOOTH_ADVERTISE"/>
@@ -16,7 +20,7 @@
 
     <!-- staršie Androidy (scan fallback) -->
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
-
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
 
     <application
         android:allowBackup="true"
@@ -31,6 +35,7 @@
 
         <activity android:name=".ServerActivity" />
         <activity android:name=".ClientActivity" />
+        <activity android:name=".DiscoveryActivity" />
         <activity android:name=".InputActivity" />
 
 
