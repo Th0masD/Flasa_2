@@ -16,7 +16,7 @@
     <!-- Android 12+ -->
     <uses-permission android:name="android.permission.BLUETOOTH_ADVERTISE"/>
     <uses-permission android:name="android.permission.BLUETOOTH_CONNECT"/>
-    <uses-permission android:name="android.permission.BLUETOOTH_SCAN"/>
+    <uses-permission android:name="android.permission.BLUETOOTH_SCAN" android:usesPermissionFlags="neverForLocation"/>
 
     <!-- staršie Androidy (scan fallback) -->
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
@@ -34,7 +34,6 @@
         tools:targetApi="31">
 
         <activity android:name=".ServerActivity" />
-        <activity android:name=".ClientActivity" />
         <activity android:name=".DiscoveryActivity" />
         <activity android:name=".InputActivity" />
 

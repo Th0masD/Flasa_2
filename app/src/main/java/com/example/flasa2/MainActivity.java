@@ -2,9 +2,13 @@ package com.example.flasa2;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.widget.Button;
 
+
 import androidx.appcompat.app.AppCompatActivity;
+
 
 public class MainActivity extends AppCompatActivity {
 
@@ -18,6 +22,7 @@ public class MainActivity extends AppCompatActivity {
 
         btnServer = findViewById(R.id.btnServer);
         btnClient = findViewById(R.id.btnClient);
+
 
         if (!PermissionUtil.checkAndRequestPermissions(this)) {
             return;
@@ -35,4 +40,8 @@ public class MainActivity extends AppCompatActivity {
             startActivity(intent);
         });
     }
+
+
+
+
 }

@@ -46,8 +46,14 @@ public class CallManager {
         if (hasCallPermission(activity)) {
 
             Intent callIntent = new Intent(Intent.ACTION_CALL);
-            callIntent.setData(Uri.parse("tel:" + phoneNumber));
-            activity.startActivity(callIntent);
+            callIntent.setData(Uri.parse("tel:" + Uri.encode(phoneNumber)));
+            callIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+
+            try {
+                activity.startActivity(callIntent);
+            } catch (SecurityException e) {
+                e.printStackTrace();
+            }
 
         } else {
             requestCallPermission(activity);

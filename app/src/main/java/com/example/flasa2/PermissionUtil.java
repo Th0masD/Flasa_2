@@ -49,20 +49,17 @@ public class PermissionUtil {
 
                 permissions.add(Manifest.permission.ACCESS_FINE_LOCATION);
             }
-        }
 
-        if (!permissions.isEmpty()) {
-
-            ActivityCompat.requestPermissions(
+            if (ContextCompat.checkSelfPermission(
                     activity,
-                    permissions.toArray(new String[0]),
-                    REQUEST_CODE
-            );
+                    Manifest.permission.ACCESS_COARSE_LOCATION)
+                    != PackageManager.PERMISSION_GRANTED) {
 
-            return false;
+                permissions.add(Manifest.permission.ACCESS_COARSE_LOCATION);
+            }
         }
 
-        // Povolenie na telefonovanie (všetky verzie)
+        // Telefonovanie
         if (ContextCompat.checkSelfPermission(
                 activity,
                 Manifest.permission.CALL_PHONE)
@@ -71,18 +68,7 @@ public class PermissionUtil {
             permissions.add(Manifest.permission.CALL_PHONE);
         }
 
-        if (!permissions.isEmpty()) {
-
-            ActivityCompat.requestPermissions(
-                    activity,
-                    permissions.toArray(new String[0]),
-                    REQUEST_CODE
-            );
-
-            return false;
-
-        }
-
+        // SMS
         if (ContextCompat.checkSelfPermission(
                 activity,
                 Manifest.permission.SEND_SMS)
@@ -91,6 +77,7 @@ public class PermissionUtil {
             permissions.add(Manifest.permission.SEND_SMS);
         }
 
+        // Jediné vyžiadanie všetkých povolení naraz
         if (!permissions.isEmpty()) {
 
             ActivityCompat.requestPermissions(
@@ -100,31 +87,7 @@ public class PermissionUtil {
             );
 
             return false;
-
         }
-
-        if (ContextCompat.checkSelfPermission(
-                activity,
-                Manifest.permission.ACCESS_COARSE_LOCATION)
-                != PackageManager.PERMISSION_GRANTED) {
-
-            permissions.add(Manifest.permission.ACCESS_COARSE_LOCATION);
-        }
-
-        if (!permissions.isEmpty()) {
-
-            ActivityCompat.requestPermissions(
-                    activity,
-                    permissions.toArray(new String[0]),
-                    REQUEST_CODE
-            );
-
-            return false;
-
-        }
-
-
-
 
         return true;
     }

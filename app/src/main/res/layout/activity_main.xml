@@ -10,13 +10,15 @@
         android:id="@+id/btnServer"
         android:layout_width="200dp"
         android:layout_height="wrap_content"
-        android:text="SERVER" />
+        android:text="SERVER"
+        android:textColor="@android:color/white"/>
 
     <Button
         android:id="@+id/btnClient"
         android:layout_width="200dp"
         android:layout_height="wrap_content"
         android:layout_marginTop="20dp"
-        android:text="CLIENT" />
+        android:text="CLIENT"
+        android:textColor="@android:color/white"/>
 
 </LinearLayout>

@@ -213,43 +213,69 @@ public class BleManager {
                         }
                     }
 
-                    if (status == BluetoothGatt.GATT_SUCCESS) {
+                    if (status != BluetoothGatt.GATT_SUCCESS) {
+                        Log.e(TAG, "Service discovery failed: " + status);
+                        return;
+                    }
 
-                        Log.d(TAG, "Services discovered");
+                    Log.d(TAG, "Services discovered");
 
-                        BluetoothGattService service =
-                                gatt.getService(Constants.HEART_RATE_SERVICE_UUID);
+                    BluetoothGattService service =
+                            gatt.getService(Constants.HEART_RATE_SERVICE_UUID);
 
-                        if (service != null) {
+                    if (service != null) {
 
-                            BluetoothGattCharacteristic notifyChar =
-                                    service.getCharacteristic(Constants.BODY_SENSOR_LOCATION_CHARACTERISTIC_UUID);
+                        BluetoothGattCharacteristic notifyChar =
+                                service.getCharacteristic(
+                                        Constants.BODY_SENSOR_LOCATION_CHARACTERISTIC_UUID);
 
-                            if (notifyChar != null) {
+                        if (notifyChar != null) {
 
-                                // zapne prijímanie notifikácií lokálne
-                                gatt.setCharacteristicNotification(notifyChar, true);
+                            gatt.setCharacteristicNotification(notifyChar, true);
 
-                                // zapíše CCCD na server
-                                BluetoothGattDescriptor descriptor =
-                                        notifyChar.getDescriptor(
-                                                UUID.fromString("00002902-0000-1000-8000-00805f9b34fb"));
+                            BluetoothGattDescriptor descriptor =
+                                    notifyChar.getDescriptor(
+                                            UUID.fromString(
+                                                    "00002902-0000-1000-8000-00805f9b34fb"));
 
-                                if (descriptor != null) {
-                                    descriptor.setValue(
-                                            BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE
-                                    );
+                            if (descriptor != null) {
 
-                                    gatt.writeDescriptor(descriptor);
-                                }
+                                descriptor.setValue(
+                                        BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE);
+
+                                // TU už callback NEVOLAJ
+                                gatt.writeDescriptor(descriptor);
+
+                                return;
                             }
                         }
+                    }
+
+                    // Ak nebolo treba zapisovať descriptor,
+                    // služby sú pripravené okamžite.
+                    if (callback != null) {
+                        callback.onServicesDiscovered();
+                    }
+                }
+
+                @Override
+                public void onDescriptorWrite(BluetoothGatt gatt,
+                                              BluetoothGattDescriptor descriptor,
+                                              int status) {
+
+                    Log.d(TAG, "Descriptor write finished, status = " + status);
+
+                    if (status == BluetoothGatt.GATT_SUCCESS) {
 
                         if (callback != null) {
                             callback.onServicesDiscovered();
                         }
+
+                    } else {
+                        Log.e(TAG, "Descriptor write failed: " + status);
                     }
                 }
+
 
                 @Override
                 public void onCharacteristicRead(BluetoothGatt gatt,
