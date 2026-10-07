@@ -7,10 +7,15 @@ import static java.lang.Math.abs;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothManager;
 import android.content.Context;
+import android.content.Intent;
 import android.graphics.Color;
 import android.media.AudioManager;
 import android.media.ToneGenerator;
+import android.net.Uri;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
+import android.telecom.TelecomManager;
 import android.util.Log;
 import android.widget.Button;
 import android.widget.TextView;
@@ -24,6 +29,8 @@ import android.hardware.SensorManager;
 
 
 import androidx.appcompat.app.AppCompatActivity;
+
+import java.io.DataOutputStream;
 
 public class ServerActivity extends AppCompatActivity implements SensorEventListener{
 
@@ -45,9 +52,6 @@ public class ServerActivity extends AppCompatActivity implements SensorEventList
     public String mStav;
 
 
-
-
-
     float zmenaY;
     float zmenaYzaciatocna;
 
@@ -57,6 +61,7 @@ public class ServerActivity extends AppCompatActivity implements SensorEventList
     float zmenaZ;
     float zmenaZzaciatocna;
 
+    private int pocitadlo_zobrazenia = 0;
 
     int pocitadlo_nakolnu = 5;  //Pocita kolko krat sa zavola gyroskop
     private SensorManager sensorManager;
@@ -155,6 +160,7 @@ public class ServerActivity extends AppCompatActivity implements SensorEventList
 
 
         // Telefonovanaie manager
+        /*
             callStateManager = new CallStateManager();
 
             callStateManager.start(this, new CallStateManager.CallListener() {
@@ -162,20 +168,16 @@ public class ServerActivity extends AppCompatActivity implements SensorEventList
                 public void onRinging() {
                     Log.d("CALL", "Volá...");
                 }
-
                 @Override
                 public void onAnswered() {
                     Log.d("CALL", "Zdvihnuté");
                 }
-
                 @Override
                 public void onEnded(CallStateManager.CallResult result) {
                     Log.d("CALL", "Výsledok: " + result);
                 }
-
-
             });
-
+            */
     }
 
 
@@ -226,15 +228,12 @@ public class ServerActivity extends AppCompatActivity implements SensorEventList
                     }
                 });
 
-
                 TestNaklonu = false;
                 stopSensor();
-
                 break;
 
             case "SM":
                // SendSMS();
-
                 break;
 
             case "TS":
@@ -264,7 +263,15 @@ public class ServerActivity extends AppCompatActivity implements SensorEventList
 
     @Override
     public void onSensorChanged(SensorEvent sensorEvent) {
-        txtNaklonRealtime.setText("Value: " + String.format("%.1f  %.1f  %.1f", sensorEvent.values[0],sensorEvent.values[1],sensorEvent.values[2]));
+
+        pocitadlo_zobrazenia++;
+
+        // Ak je zvyšok po delení 5 rovný 0, ide o 5., 10., 15., 20... vypis
+        if (pocitadlo_zobrazenia % 5 == 0) {
+            txtNaklonRealtime.setText("Value: " + String.format("%.1f  %.1f  %.1f", sensorEvent.values[0],sensorEvent.values[1],sensorEvent.values[2]));
+            pocitadlo_zobrazenia = 0;
+        }
+
         zmenaX = sensorEvent.values[0];
         zmenaY = sensorEvent.values[1];
         zmenaZ = sensorEvent.values[2];
@@ -298,15 +305,44 @@ public class ServerActivity extends AppCompatActivity implements SensorEventList
         if (((abs(zmenaXzaciatocna-zmenaX)>1) || (abs(zmenaYzaciatocna-zmenaY)>1) || (abs(zmenaZzaciatocna-zmenaZ)>1)) && ZapVyp)
         {
             //      ToneGenerator toneG = new ToneGenerator(AudioManager.STREAM_ALARM, 100);
-           // zavolajCislo();
-
-                CallManager.makeCall(this, mobilcislo);
-
-
+            airplaneOff();
             //  SendSMS();
-            //  sensorManager.unregisterListener(PeripheralRoleActivity.this);
+
+            stopSensor();
+            try { Thread.sleep(3000); } catch (InterruptedException ignored) {}   //Cakaj kym sa vypne AirplaneMode
+
+            spustiProces(); // zavola a po 12sekundach hovor zrusi rpicom caka ky to skonci a nic nerobi
+
+            ZapVyp = false;
+            startSensor();
+
+            //CallManager.makeCall(this, mobilcislo);
+            //sensorManager.unregisterListener(ServerActivity.this);
         }
     }
+
+
+    public void spustiProces() {
+        new Thread(() -> {
+
+            // 1. Zavolanie hovoru
+            RootCallHelper.makeCallAndAutoHangup(ServerActivity.this, mobilcislo);
+
+            // 2. Blokujúce čakanie na pozadí, kým sa zmení flag v triede RootCallHelper
+            while (!RootCallHelper.isHangupFinished) {
+                try {
+                    Thread.sleep(500); // Kontrola každých 500 ms (šetrenie CPU)
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
+
+            // 3. Kód po ukončení zavesenia
+            Log.i("ServerActivity", "Hovor bol zavesený, pokračujem v ďalšom kóde...");
+
+        }).start();
+    }
+
 
     private void startSensor() {
         if (!sensorEnabled && sensorManager != null && acclerometer != null) {
@@ -322,6 +358,28 @@ public class ServerActivity extends AppCompatActivity implements SensorEventList
         }
     }
 
+    public void airplaneOff() {
+
+        try {
+
+            Process process = Runtime.getRuntime().exec("su");
+
+            DataOutputStream os = new DataOutputStream(process.getOutputStream());
+
+            os.writeBytes("settings put global airplane_mode_on 0\n");
+
+            os.writeBytes(
+                    "am broadcast -a android.intent.action.AIRPLANE_MODE --ez state false\n");
+
+            os.writeBytes("exit\n");
+            os.flush();
+
+            process.waitFor();
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
 
 
     @Override
@@ -344,8 +402,8 @@ public class ServerActivity extends AppCompatActivity implements SensorEventList
     @Override
     protected void onStop() {
         super.onStop();
-        bleServerManager.stop();
-        sensorManager.unregisterListener(this);
+     //   bleServerManager.stop();
+     //   sensorManager.unregisterListener(this);
     }
 
 }

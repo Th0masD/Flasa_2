@@ -5,10 +5,13 @@ import static android.content.ContentValues.TAG;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothManager;
+import android.content.Intent;
 import android.content.res.ColorStateList;
 import android.media.AudioManager;
 import android.media.ToneGenerator;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -43,6 +46,9 @@ public class InputActivity extends AppCompatActivity {
 
     boolean armed = false;
 
+    //Ked strati focus apk
+    private boolean wentToBackground = false;
+    private boolean resetting = false;
 
     ToneGenerator toneG = new ToneGenerator(AudioManager.STREAM_ALARM, 100);
 
@@ -89,13 +95,10 @@ public class InputActivity extends AppCompatActivity {
 
         String address = getIntent().getStringExtra("device_address");
 
-        BluetoothManager bluetoothManager =
-                (BluetoothManager) getSystemService(BLUETOOTH_SERVICE);
+        BluetoothManager bluetoothManager = (BluetoothManager) getSystemService(BLUETOOTH_SERVICE);
 
         BluetoothAdapter adapter = bluetoothManager.getAdapter();
-
         device = adapter.getRemoteDevice(address);
-
         bleManager = new BleManager(this, adapter);
 
 
@@ -148,8 +151,13 @@ public class InputActivity extends AppCompatActivity {
             }
         });
 
-        bleManager.disconnect();   // refresh cache + close starý GATT
-        bleManager.connect(device);
+      //  bleManager.disconnect();   // refresh cache + close starý GATT
+        bleManager.disconnect();
+
+        new Handler(Looper.getMainLooper()).postDelayed(() -> {
+            bleManager.connect(device);
+        }, 500);
+
 
 
     }
@@ -161,6 +169,52 @@ public class InputActivity extends AppCompatActivity {
         settings.setIcon(R.drawable.baseline_settings_24);
         return true;
     }
+
+/*
+    @Override
+    protected void onStop() {
+        super.onStop();
+
+        // Activity už nie je viditeľná.
+        // Home alebo prepnutie do inej aplikácie.
+        if (!isChangingConfigurations() && !isFinishing()) {
+            wentToBackground = true;
+        }
+    }
+
+
+    @Override
+    protected void onStart() {
+        super.onStart();
+
+        if (wentToBackground && !resetting) {
+
+            resetting = true;
+            wentToBackground = false;
+
+            // Odpojenie BLE
+            if (bleManager != null) {
+                bleManager.disconnect();
+            }
+
+            // Otvor DiscoveryActivity a odstráň InputActivity
+            // aj ostatné Activity z back stacku.
+            Intent intent = new Intent(
+                    InputActivity.this,
+                    DiscoveryActivity.class
+            );
+
+            intent.addFlags(
+                    Intent.FLAG_ACTIVITY_NEW_TASK |
+                            Intent.FLAG_ACTIVITY_CLEAR_TASK
+            );
+
+            startActivity(intent);
+
+            finish();
+        }
+    }
+*/
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {

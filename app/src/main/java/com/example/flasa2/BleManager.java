@@ -51,19 +51,35 @@ public class BleManager {
     }
 
     public void connect(BluetoothDevice device) {
-        bluetoothGatt = device.connectGatt(
-                context,
-                false,
-                gattCallback,
-                BluetoothDevice.TRANSPORT_LE
-        );
+
+        Log.d(TAG, "CONNECT: " + device.getAddress());
+
+        bluetoothGatt = device.connectGatt(context, false, gattCallback, BluetoothDevice.TRANSPORT_LE);
+
     }
 
     public void disconnect() {
-        if (bluetoothGatt == null) return;
+        Log.d(TAG, "FULL BLE DISCONNECT");
 
-        bluetoothGatt.disconnect();
+        operationQueue.clear();
+        isOperationRunning = false;
+
+        BluetoothGatt gatt = bluetoothGatt;
+
+        if (gatt != null) {
+            try {
+                gatt.disconnect();
+            } catch (Exception e) {
+                Log.e(TAG, "disconnect error", e);
+            }
+        }
+
+        // ZATIAĽ NEVOLAJ gatt.close()
+        bluetoothGatt = null;
+
+        Log.d(TAG, "BLE disconnect requested");
     }
+
 
     public void readBattery() {
 
@@ -151,36 +167,42 @@ public class BleManager {
 
 
                 @Override
-                public void onConnectionStateChange(BluetoothGatt gatt,
-                                                    int status,
-                                                    int newState) {
+                public void onConnectionStateChange(
+                        BluetoothGatt gatt,
+                        int status,
+                        int newState) {
 
-                    if (newState == BluetoothProfile.STATE_CONNECTED) {
-
-                        Log.d(TAG, "Connected");
-
-                        bluetoothGatt = gatt;   // 🔥 DÔLEŽITÉ
-
-                        if (callback != null) {
-                            callback.onConnected();
-                        }
-
-                        bluetoothGatt.discoverServices();  // ✔ sem to patrí
-                    }
+                    Log.d(TAG, "STATE: gatt="
+                            + System.identityHashCode(gatt)
+                            + " status=" + status
+                            + " state=" + newState);
 
                     if (newState == BluetoothProfile.STATE_DISCONNECTED) {
 
-                        Log.d(TAG, "Disconnected");
+                        Log.d(TAG, "DISCONNECTED");
+
+                        try {
+                            gatt.close();
+                        } catch (Exception e) {
+                            Log.e(TAG, "close error", e);
+                        }
+
+                        if (bluetoothGatt == gatt) {
+                            bluetoothGatt = null;
+                        }
 
                         if (callback != null) {
                             callback.onDisconnected();
                         }
+                    }
 
-                        try {
-                            bluetoothGatt.close();
-                        } catch (Exception ignored) {}
+                    else if (newState == BluetoothProfile.STATE_CONNECTED) {
 
-                        bluetoothGatt = null;
+                        Log.d(TAG, "CONNECTED");
+
+                        bluetoothGatt = gatt;
+
+                        gatt.discoverServices();
                     }
                 }
 
@@ -188,6 +210,9 @@ public class BleManager {
                 public void onCharacteristicChanged(
                         BluetoothGatt gatt,
                         BluetoothGattCharacteristic characteristic) {
+
+                    Log.d(TAG, "!!! NOTIFICATION RECEIVED !!! UUID="
+                            + characteristic.getUuid());
 
                     byte[] data = characteristic.getValue();
                     String message = new String(data);
@@ -204,6 +229,8 @@ public class BleManager {
 
                 @Override
                 public void onServicesDiscovered(BluetoothGatt gatt, int status) {
+
+                    Log.d(TAG, "SERVICES: status=" + status);
 
                     for (BluetoothGattService s : gatt.getServices()) {
                         Log.d(TAG, "Service: " + s.getUuid());
