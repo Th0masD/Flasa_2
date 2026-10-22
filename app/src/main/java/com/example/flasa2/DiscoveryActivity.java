@@ -31,7 +31,7 @@ public class DiscoveryActivity extends AppCompatActivity {
     private ArrayAdapter<String> adapter;
     private ListView listView;
 
-    private static final long FLASA_SCAN_TIMEOUT = 8000; // 8 sekúnd
+    private static final long FLASA_SCAN_TIMEOUT = 80000; // 80 sekúnd
 
     private boolean flasaFound = false;
 
@@ -59,7 +59,6 @@ public class DiscoveryActivity extends AppCompatActivity {
         bluetoothAdapter = bluetoothManager.getAdapter();
         scanner = bluetoothAdapter.getBluetoothLeScanner();
 
-        startScan();
 
         listView.setOnItemClickListener(
                 (parent, view, position, id) -> {
@@ -98,7 +97,7 @@ public class DiscoveryActivity extends AppCompatActivity {
 
         scanner.startScan(scanCallback);
 
-        // FLASA hľadáme maximálne 8 sekúnd
+        // FLASA hľadáme maximálne 80 sekúnd
         scanHandler.postDelayed(
                 stopFlasaScan,
                 FLASA_SCAN_TIMEOUT
@@ -213,6 +212,17 @@ public class DiscoveryActivity extends AppCompatActivity {
                                     + errorCode);
                 }
             };
+
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+
+        if (scanner != null) {
+            startScan();
+        }
+    }
+
 
     @Override
     protected void onDestroy() {

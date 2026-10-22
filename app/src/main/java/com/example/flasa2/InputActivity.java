@@ -7,6 +7,7 @@ import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothManager;
 import android.content.Intent;
 import android.content.res.ColorStateList;
+import android.graphics.Color;
 import android.media.AudioManager;
 import android.media.ToneGenerator;
 import android.os.Bundle;
@@ -22,6 +23,8 @@ import android.widget.Toast;
 import android.view.View;
 import android.content.SharedPreferences;
 import android.text.InputType;
+
+import androidx.activity.OnBackPressedCallback;
 import androidx.appcompat.app.AlertDialog;
 
 import androidx.appcompat.app.AppCompatActivity;
@@ -50,6 +53,40 @@ public class InputActivity extends AppCompatActivity {
     private boolean wentToBackground = false;
     private boolean resetting = false;
 
+
+    //Citane charaktristiky status a battery kazdych 5sek
+    private final Handler handler = new Handler(Looper.getMainLooper());
+
+    private final Runnable readStatusRunnable = new Runnable() {
+        @Override
+        public void run() {
+
+            // Spusti 5-sekundový timeout
+            handler.removeCallbacks(serverTimeoutRunnable);
+            handler.postDelayed(serverTimeoutRunnable, 5000);
+
+            bleManager.readBattery();
+            bleManager.readStatus();
+
+            handler.postDelayed(this, 5000);
+        }
+    };
+
+    //Kontrola ci odpovedal server na citanie Statusu
+    private final Runnable serverTimeoutRunnable = () -> {
+        runOnUiThread(() ->
+                txtStav.setText("Server neodpovedá"));
+
+        //Nastavi Ovladacie tlacidlo na Sive
+        btnAlarm.setText(". . . .");
+        btnAlarm.setBackgroundTintList(ColorStateList.valueOf(ContextCompat.getColor(this, android.R.color.darker_gray)));
+
+        // Odpoj BLE spojenie so serverom
+        bleManager.disconnect();
+
+    };
+
+
     ToneGenerator toneG = new ToneGenerator(AudioManager.STREAM_ALARM, 100);
 
     @Override
@@ -74,17 +111,30 @@ public class InputActivity extends AppCompatActivity {
         }
 
 
+        // Zablokovanie systémového tlačidla Back
+        getOnBackPressedDispatcher().addCallback(this,
+                new OnBackPressedCallback(true) {
+            @Override
+                    public void handleOnBackPressed() {
+                        // Nerob nič
+                    }
+                });
+
+
+
         //Zobrazi aktualne telefonne cislo
         SharedPreferences preferences = getSharedPreferences("FLASA_SETTINGS", MODE_PRIVATE);
         String phoneNumber = preferences.getString("phone_number", "");
         txtTelcislo.setText(phoneNumber);
 
+        //Nastavi Ovladacie tlacidlo na Sive
+        btnAlarm.setText(". . . .");
+        btnAlarm.setBackgroundTintList(ColorStateList.valueOf(ContextCompat.getColor(this, android.R.color.darker_gray)));
 
-        //Testovacia obrazovka
+
+        //Testovacia obrazovka sa pouziva v rezime testujem
         testScreen = findViewById(R.id.testScreen);
-
         Button buttonCancelTest = findViewById(R.id.buttonCancelTest);
-
         buttonCancelTest.setOnClickListener(v -> {
 
             bleManager.writeNumber("OF:" + phoneNumber);
@@ -108,19 +158,25 @@ public class InputActivity extends AppCompatActivity {
                // runOnUiThread(() ->
               //          Toast.makeText(InputActivity.this,
                //                 "Connected", Toast.LENGTH_SHORT).show());
-                txtStav.setText("Connected");
+               // txtStav.setText("Connected");
             }
 
             @Override
             public void onDisconnected() {
-                txtStav.setText("Disconnected");
+                handler.removeCallbacks(readStatusRunnable); //vypnutie citanie statusu kazdych 5sek
             }
 
             @Override
             public void onServicesDiscovered() {
 
-                Log.e(TAG, "Discovered serices");
+                handler.removeCallbacks(readStatusRunnable);
+
+                // prvé čítanie okamžite
                 bleManager.readBattery();
+                bleManager.readStatus();
+
+                // potom každých 5 sekúnd
+                handler.postDelayed(readStatusRunnable, 5000);
             }
 
 
@@ -135,14 +191,66 @@ public class InputActivity extends AppCompatActivity {
                 //toneG.startTone(ToneGenerator.TONE_CDMA_DIAL_TONE_LITE, 100);
                 ToneGenerator toneG = new ToneGenerator(AudioManager.STREAM_MUSIC, 100);
                 toneG.startTone(ToneGenerator.TONE_PROP_BEEP, 200);
-                txtNotify.setText(message);
+                //txtNotify.setText(message);
+
             }
+
 
 
             @Override
             public void onBatteryReceived(int batteryLevel) {
+                Log.d(TAG, "Vypis hodnoty baterie");
+
                 runOnUiThread(() ->
                         txtBattery.setText(batteryLevel + "%"));
+            }
+
+            @Override
+            public void onStatusReceived(String message) {
+
+                String mStav;
+
+                Log.d(TAG, "Vypis stavu");
+
+                handler.removeCallbacks(serverTimeoutRunnable);
+                runOnUiThread(() -> txtStav.setText(message));
+
+
+                String[] separated = message.split(":");
+                mStav = separated[0];
+
+
+                if (mStav == null) return;
+
+                switch (mStav) {
+                    case "ON":
+
+                        runOnUiThread(() -> {
+                            btnAlarm.setBackgroundTintList(
+                                    ColorStateList.valueOf(
+                                            ContextCompat.getColor(InputActivity.this, android.R.color.holo_red_dark)
+                                    )
+                            );
+                            btnAlarm.setText("ARMED");
+                        });
+
+                        break;
+
+
+                    case "OF":
+
+                        runOnUiThread(() -> {
+                            btnAlarm.setBackgroundTintList(
+                                    ColorStateList.valueOf(
+                                            ContextCompat.getColor(InputActivity.this, android.R.color.holo_green_dark)
+                                    )
+                            );
+                            btnAlarm.setText("DISARMED");
+                        });
+
+                        break;
+
+                }
             }
 
             @Override
@@ -240,8 +348,7 @@ public class InputActivity extends AppCompatActivity {
                     SharedPreferences preferences =
                             getSharedPreferences("FLASA_SETTINGS", MODE_PRIVATE);
 
-                    String savedPhone =
-                            preferences.getString("phone_number", "");
+                    String savedPhone = preferences.getString("phone_number", "");
 
                     EditText input = new EditText(this);
                     input.setInputType(InputType.TYPE_CLASS_PHONE);
@@ -283,6 +390,14 @@ public class InputActivity extends AppCompatActivity {
                     return true;
                 }
 
+                if (menuItem.getItemId() == R.id.menu_connect) {
+
+                    finish();
+                    return true;
+                }
+
+
+
                 if (menuItem.getItemId() == R.id.menu_info) {
                     // Info
                     return true;
@@ -316,25 +431,24 @@ public class InputActivity extends AppCompatActivity {
 
             if (armed) {
 
-                btnAlarm.setText("ARMED");
-                btnAlarm.setBackgroundTintList(
-                        ColorStateList.valueOf(
-                                ContextCompat.getColor(this, android.R.color.holo_red_dark)
-                        )
-                );
+            //    btnAlarm.setText("ARMED");
+            //    btnAlarm.setBackgroundTintList(ColorStateList.valueOf(ContextCompat.getColor(this, android.R.color.holo_red_dark))
+                        //Nastavi Ovladacie tlacidlo na Sive
+                        btnAlarm.setText(". . . .");
+                btnAlarm.setBackgroundTintList(ColorStateList.valueOf(ContextCompat.getColor(this, android.R.color.darker_gray)));
 
-                //String number = inputNumber.getText().toString().trim();
+
                 bleManager.writeNumber("ON:" + phoneNumber);
 
             } else {
 
 
-                btnAlarm.setText("DISARMED");
-                btnAlarm.setBackgroundTintList(
-                        ColorStateList.valueOf(
-                                ContextCompat.getColor(this, android.R.color.holo_green_dark)
-                        )
-                );
+           //     btnAlarm.setText("DISARMED");
+           //     btnAlarm.setBackgroundTintList(ColorStateList.valueOf(ContextCompat.getColor(this, android.R.color.holo_green_dark)));
+
+                //Nastavi Ovladacie tlacidlo na Sive
+                btnAlarm.setText(". . . .");
+                btnAlarm.setBackgroundTintList(ColorStateList.valueOf(ContextCompat.getColor(this, android.R.color.darker_gray)));
 
                 bleManager.writeNumber("OF:" + phoneNumber);
             }
@@ -348,3 +462,5 @@ public class InputActivity extends AppCompatActivity {
 
 
 }
+
+

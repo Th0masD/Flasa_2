@@ -127,6 +127,8 @@ public class ServerActivity extends AppCompatActivity implements SensorEventList
 
                 SpracovaniePrikazuClienta(value);
 
+                bleServerManager.sendNotification("ACK:" + value); //Posle clientovy ACK ze prijal prikaz
+
                 runOnUiThread(() ->
                         txtReceived.setText("Received: " + value));
             }
@@ -141,6 +143,12 @@ public class ServerActivity extends AppCompatActivity implements SensorEventList
             public void onBatteryReceived(int batteryLevel) {
                 // optional server UI
             }
+
+            @Override
+            public void onStatusReceived(String message) {
+                // optional server UI
+            }
+
 
             @Override
             public void onError(String message) {

@@ -97,8 +97,8 @@ public class BleManager {
                 service.getCharacteristic(
                         Constants.BATTERY_LEVEL_UUID);
 
-        Log.d(TAG, "Battery char UUID = " + characteristic.getUuid());
-        Log.d(TAG, "Battery char instance = " + characteristic);
+        //Log.d(TAG, "Battery char UUID = " + characteristic.getUuid());
+        //Log.d(TAG, "Battery char instance = " + characteristic);
 
 
         if (characteristic == null) return;
@@ -106,8 +106,40 @@ public class BleManager {
         operationQueue.add(() -> {
             isOperationRunning = true;
 
-            boolean success =
-                    bluetoothGatt.readCharacteristic(characteristic);
+            boolean success = bluetoothGatt.readCharacteristic(characteristic);
+
+            if (!success) {
+                isOperationRunning = false;
+                nextOperation();
+            }
+        });
+
+        nextOperation();
+    }
+
+    public void readStatus() {
+
+        if (bluetoothGatt == null) return;
+
+        BluetoothGattService service = bluetoothGatt.getService(Constants.HEART_RATE_SERVICE_UUID);
+
+        Log.d(TAG, "READ STATUS");
+
+
+        if (service == null) return;
+
+        BluetoothGattCharacteristic characteristic = service.getCharacteristic(Constants.HEART_RATE_MEASUREMENT_CHARACTERISTIC_UUID);
+
+       // Log.d(TAG, "Heart rate char UUID = " + characteristic.getUuid());
+       // Log.d(TAG, "Heart rate char instance = " + characteristic);
+
+
+        if (characteristic == null) return;
+
+        operationQueue.add(() -> {
+            isOperationRunning = true;
+
+            boolean success = bluetoothGatt.readCharacteristic(characteristic);
 
             if (!success) {
                 isOperationRunning = false;
@@ -122,14 +154,13 @@ public class BleManager {
 
         if (bluetoothGatt == null) return;
 
-        BluetoothGattService service =
-                bluetoothGatt.getService(Constants.HEART_RATE_SERVICE_UUID);
+        BluetoothGattService service = bluetoothGatt.getService(Constants.HEART_RATE_SERVICE_UUID);
+
+        Log.d(TAG, "BLEMANAGER writenumber" + number);
 
         if (service == null) return;
 
-        BluetoothGattCharacteristic characteristic =
-                service.getCharacteristic(
-                        Constants.HEART_RATE_MEASUREMENT_CHARACTERISTIC_UUID);
+        BluetoothGattCharacteristic characteristic = service.getCharacteristic(Constants.HEART_RATE_MEASUREMENT_CHARACTERISTIC_UUID);
 
         if (characteristic == null) return;
 
@@ -138,8 +169,7 @@ public class BleManager {
 
             characteristic.setValue(number.getBytes());
 
-            boolean success =
-                    bluetoothGatt.writeCharacteristic(characteristic);
+            boolean success = bluetoothGatt.writeCharacteristic(characteristic);
 
             if (!success) {
                 isOperationRunning = false;
@@ -219,6 +249,14 @@ public class BleManager {
 
                     Log.e(TAG, "Notification received: " + message);
 
+                    if (message.startsWith("ACK:")) {
+                        Log.d(TAG, "SERVER POTVRDIL PRIJATIE: " + message);
+
+                        // tu môžeš napr. nastaviť boolean / oznámiť UI
+                    }
+                    else Log.d(TAG, "SERVER NEPOTVRDIL PRIJATIE: " + message);
+
+
                     if (callback != null) {
                         callback.onNotificationReceived(message);
                     }
@@ -267,8 +305,7 @@ public class BleManager {
 
                             if (descriptor != null) {
 
-                                descriptor.setValue(
-                                        BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE);
+                                descriptor.setValue(BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE);
 
                                 // TU už callback NEVOLAJ
                                 gatt.writeDescriptor(descriptor);
@@ -305,26 +342,35 @@ public class BleManager {
 
 
                 @Override
-                public void onCharacteristicRead(BluetoothGatt gatt,
-                                                 BluetoothGattCharacteristic characteristic,
-                                                 int status) {
+                public void onCharacteristicRead(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic, int status) {
 
                     isOperationRunning = false;
 
                     if (status == BluetoothGatt.GATT_SUCCESS) {
 
-                        if (Constants.BATTERY_LEVEL_UUID
-                                .equals(characteristic.getUuid())) {
 
-                            int battery =
-                                    characteristic.getIntValue(
-                                            BluetoothGattCharacteristic.FORMAT_UINT8,
-                                            0);
+
+                        if (Constants.BATTERY_LEVEL_UUID.equals(characteristic.getUuid())) {
+
+
+                            int battery = characteristic.getIntValue(BluetoothGattCharacteristic.FORMAT_UINT8, 0);
 
                             if (callback != null) {
                                 callback.onBatteryReceived(battery);
                             }
                         }
+
+                        else if (Constants.HEART_RATE_MEASUREMENT_CHARACTERISTIC_UUID.equals(characteristic.getUuid())) {
+
+
+                            String status1 = characteristic.getStringValue(0);
+
+                            if (callback != null) {
+                                callback.onStatusReceived(status1);
+                            }
+                        }
+
+
                     }
 
                     nextOperation();

@@ -12,6 +12,8 @@ public interface BleCallback {
 
     void onBatteryReceived(int batteryLevel);
 
+    void onStatusReceived(String message);
+
     void onNotificationReceived(String message);
 
     void onError(String message);

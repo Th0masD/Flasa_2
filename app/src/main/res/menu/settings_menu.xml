@@ -6,6 +6,10 @@
         android:title="Telefónne číslo" />
 
     <item
+        android:id="@+id/menu_connect"
+        android:title="Pripojit" />
+
+    <item
         android:id="@+id/menu_test"
         android:title="Test" />
 

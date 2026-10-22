@@ -19,6 +19,7 @@ import android.os.ParcelUuid;
 import android.util.Log;
 
 
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
@@ -126,8 +127,10 @@ public class BleServerManager {
         BluetoothGattCharacteristic writeChar1 =
                 new BluetoothGattCharacteristic(
                         Constants.HEART_RATE_MEASUREMENT_CHARACTERISTIC_UUID,
-                        BluetoothGattCharacteristic.PROPERTY_WRITE,
-                        BluetoothGattCharacteristic.PERMISSION_WRITE
+                        BluetoothGattCharacteristic.PROPERTY_WRITE |
+                                BluetoothGattCharacteristic.PROPERTY_READ,
+                        BluetoothGattCharacteristic.PERMISSION_WRITE |
+                                BluetoothGattCharacteristic.PERMISSION_READ
                 );
 
         notifyChar =
@@ -146,7 +149,7 @@ public class BleServerManager {
 
         notifyChar.addDescriptor(configDescriptor);
 
-
+        writeChar1.setValue("OF:123456");
         service.addCharacteristic(writeChar1);
         service.addCharacteristic(notifyChar);
 
@@ -268,38 +271,52 @@ public class BleServerManager {
                         }
                     }
 
-                    gattServer.sendResponse(device, requestId,
-                            BluetoothGatt.GATT_SUCCESS, 0, null);
+                    gattServer.sendResponse(device, requestId, BluetoothGatt.GATT_SUCCESS, 0, null);
                 }
 
 
 
 
-
+                /*
                 @Override
-                public void onCharacteristicReadRequest(
-                        BluetoothDevice device,
-                        int requestId,
-                        int offset,
-                        BluetoothGattCharacteristic characteristic) {
+                public void onCharacteristicReadRequest(BluetoothDevice device, int requestId, int offset, BluetoothGattCharacteristic characteristic) {
 
                     if (characteristic == null) {
                         return;
                     }
 
                     byte battery = getBatteryLevel();
-
                     characteristic.setValue(new byte[]{battery});
-
-                    gattServer.sendResponse(
-                            device,
-                            requestId,
-                            BluetoothGatt.GATT_SUCCESS,
-                            offset,
-                            characteristic.getValue()
-                    );
+                    gattServer.sendResponse(device, requestId, BluetoothGatt.GATT_SUCCESS, offset, characteristic.getValue());
                 }
+                */
 
+                @Override
+                public void onCharacteristicReadRequest(BluetoothDevice device, int requestId, int offset, BluetoothGattCharacteristic characteristic) {
+
+                    if (characteristic == null) {
+                        gattServer.sendResponse(device, requestId, BluetoothGatt.GATT_FAILURE, offset, null);
+                        return;
+                    }
+
+
+                    if (Constants.BATTERY_LEVEL_UUID.equals(characteristic.getUuid())) {
+
+                        Log.d(TAG, "BLESERVERMANAGER BAT");
+
+                        byte battery = getBatteryLevel();
+
+                        gattServer.sendResponse(device, requestId, BluetoothGatt.GATT_SUCCESS, offset, new byte[]{battery});
+
+                    } else if (Constants.HEART_RATE_MEASUREMENT_CHARACTERISTIC_UUID.equals(characteristic.getUuid())) {
+
+                        Log.d(TAG, "BLESERVERMANAGER STATUS");
+
+                        byte[] status = characteristic.getValue();
+
+                        gattServer.sendResponse(device, requestId, BluetoothGatt.GATT_SUCCESS, offset, status);
+                    }
+                }
 
                 @Override
                 public void onCharacteristicWriteRequest(
@@ -315,31 +332,21 @@ public class BleServerManager {
                     if (preparedWrite) return;
                     if (offset != 0) return;
 
+                    // ULOŽ prijatú hodnotu do charakteristiky
+                    characteristic.setValue(value);
+
                     String data = new String(value);
 
                     Log.d(TAG, "WRITE ONLY ONCE: " + data);
 
                     if (callback != null) {
-                        callback.onDataReceived(
-                                characteristic.getUuid().toString(),
-                                value
+                        callback.onDataReceived(characteristic.getUuid().toString(), value
                         );
                     }
 
-
-
                     Log.d(TAG, "Received: " + data);
 
-
-
-                    if (responseNeeded && gattServer != null) {
-                        gattServer.sendResponse(
-                                device,
-                                requestId,
-                                android.bluetooth.BluetoothGatt.GATT_SUCCESS,
-                                0,
-                                null
-                        );
+                    if (responseNeeded && gattServer != null) {gattServer.sendResponse(device, requestId, android.bluetooth.BluetoothGatt.GATT_SUCCESS, 0, null);
                     }
                 }
             };
@@ -351,11 +358,7 @@ public class BleServerManager {
 
             notifyChar.setValue(text.getBytes());
 
-            gattServer.notifyCharacteristicChanged(
-                    connectedDevice,
-                    notifyChar,
-                    false
-            );
+            gattServer.notifyCharacteristicChanged(connectedDevice, notifyChar, false);
 
             Log.d(TAG, "Notification sent: " + text);
         }
